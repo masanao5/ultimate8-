@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- ★このタイトルを変えると、保存先が自動的に変わります -->
+    <title>アルティメット練習</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- Babel (ブラウザ内でJSXをコンパイルするため) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        /* スクロールバー非表示等のユーティリティ */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        body { font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-900 transition-colors duration-200">
+    <div id="root">
+        <div class="min-h-screen flex items-center justify-center text-slate-400 font-bold">
+            読み込み中...
+        </div>
+    </div>
+
+    <!-- type="text/babel" とすることで、ブラウザ上でJSXが実行されます -->
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useCallback } = React;
+
+        // --- アイコンコンポーネント群 (LucideのSVGをインライン化) ---
+        const IconSettings = ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>;
+        const IconMoon = ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>;
+        const IconSun = ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>;
+        const IconVolume2 = ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>;
+        const IconVolumeX = ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="1" x2="1" y2="23"></line></svg>;
+        const IconList = ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>;
+        const IconStar = ({size=24, className="", fill="none"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>;
+        const IconCheckCircle = ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>;
+        const IconX = ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
+        const IconRotateCcw = ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>;
+        const IconPlayCircle = ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>;
+
+        // --- 保存先のキーをタイトルから動的に生成 ---
+        const appTitle = document.title || 'default_practice';
+        const STORAGE_KEY = `data_${appTitle}`;
+        const SETTINGS_KEY = `settings_${appTitle}`;
+        
+        const speechRates = [1.0, 0.8, 0.6];
+
+        // --- データ定義 (ここを書き換える) ---
+        const EXCEL_DATA = `
+彼はサリーにリングを買った。 He bought Sally a ring.
+私たちは私たちの犬をエルモと呼びます。 We call our dog Elmo.
+彼女は壁を茶色に塗りました。 She painted the wall brown.
+私はちょうどそのニュースを聞いたところです。 I have just heard the news.
+私は携帯電話をなくしてしまいました。 I have lost my cell phone.
+私はジュディのお兄さんに二度会ったことがあります。 I have met Judy's brother twice.
+彼女は3年間パリに住んでいます。 She has lived in Paris for three years.
+今夜星を見ることができるでしょう。 You will be able to see the stars tonight.
+私たちはパーティーに招待されませんでした。 We were not invited to the party.
+あなたはパーティーに招待されましたか。 Were you invited to the party?
+パーティーはどこで開かれましたか。 Where was the party held?
+誰がパーティーに招待されましたか? Who was invited to the party.
+質問をしてもよろしいでしょうか？もちろんです。 May I ask you a question? Sure.
+彼は家にいるかもしれない。 He may be at home.
+あなたは少し寝なければならない。 You must get some sleep.
+彼女の夢は歌手になることだ。 Her dream is to be a singer.
+幸運なことに、彼には助けてくれる友人がいた。 Luckily, he had friends to help him.
+私はあなたに明日のパーティーに来てほしい。 I want you to come to tomorrow’s party.
+彼は私に彼の席をとっておくように言った。 He told me to save a seat for him.
+靴を脱ぐ必要はありません。 You don’t have to take off your shoes.
+彼は疲れているに違いない。 He must be tired.
+君はもっと気をつけるべきだ。 You should be more careful.
+母は私に部屋を掃除させました。 My mother made me clean my room.
+私はドアマンに私の荷物を運んでもらいました。 I had the doorman carry my baggage.
+父は私を映画に行かせてくれました。 My father let me go to the movies.
+私はその男性が車から降りるのを見ました。 I saw the man get out of the car.
+あなたはサリーと話している女の子を知っていますか。 Do you know the girl talking to Sally?
+彼らにはクリスという名の息子がいます。 They have a son named Chris.
+この試合はわくわくする試合になるでしょう。 This will be an exciting game.
+その電車には多くの興奮したファンがいました。 There were a lot of excited fans in the train.
+ドアを夜間は施錠したままにしておきなさい。 Keep the door locked at night.
+私はフランス語を上手にはなす女性にあった。 I met a woman who spoke French well.
+彼女は10代に人気がある小説を読んでいた。 She was reading a novel which was popular with teenagers.
+これが彼の書いた本です。 This is the book (which) he wrote.
+彼女は10代に人気がある小説を読んでいた。 She was reading a novel that was popular with teenagers.
+私が韓国で出会った人々は親切だった。  The people (that) I met in Korea were nice.
+これが君に話したCDです。 This is a CD which I told you about.
+彼女は彼女の妹と同じくらい上手にテニスをします。 She plays tennis as well as her sister (does).
+彼女は彼女の妹ほど上手にテニスをしません。 She doesn't play tennis as well as her sister (does).
+その写真は私を笑わせます。 The picture makes me laugh.
+その地図はあなたに駅への行き方を教えます。 The map tells you how to get to the station.
+ニックは私にその日レポートを提出しなければならないと言いました。 Nick told me that I had to hand in the paper that day.
+リサは私にいつが誕生日なのか尋ねました。 Risa asked me when my birthday was.
+母は私達に音を立てないように言った。 My mother told us not to make a noise.
+夕食を食べている間に私の携帯電話が鳴った。 My cell phone rang while I was eating dinner.
+彼らは通りに沿って歩きました。 They walked along the street.
+彼らは通りを横切りました。 They walked across the street.
+電車はトンネルを通った。 The train went through the tunnel.
+カエルは箱の外に飛び出しました。 A frog jumped out of the box.
+彼女は駅の前で待っていた。 She was waiting in front of the station
+駅の裏に小さな公園がある。 There is a small park behind the station.
+私は9時までに家に帰らなければなりません。 I have to be home by nine.
+地球は太陽の周りを回っています。 The earth goes around the sun.
+木々の向こうに城が見えるでしょう。 A castle could be seen beyond the trees.
+(3本以上の)木々の間に小さな家があります。 There is a small house among the trees.
+私たちは夏休みの間に韓国を訪れました。 We visited Korea during the summer vacation.
+今朝から雨が降り続いています。 It has been raining since this morning.
+その店は午後10時まで開いています。 The store is open until 10 p.m.
+私はその考えに反対です。 I'm against the idea.
+彼は自転車を壁に立てかけました。 He leaned his bike against the wall.
+私は眼鏡なしでは見えません。 I can't see without my glasses.
+彼女はファッションモデルとして働いています。 She is working as a fashion model.
+彼女は時々男の子のようにふるまいます。 She sometimes acts like a boy.
+その試合は雨のために延期されました。 The game was postponed because of the rain.
+雨にもかかわらず、彼らはビーチに行きました。 In spite of the rain, they went to the beach.
+私は彼がどこに住んでいるか知っています。 I know where he lives.
+私は彼に誰が窓を割ったのか尋ねるでしょう。 I'll ask him who broke the window.
+「少し休憩したらどうですか?」「そうだね。」 "Why don't you take a break for a few minutes?" "Right."
+私は今日新しい時計を買った。 I bought a new watch today.
+あなたの探しているCDはこれですか? Is this the CD you are looking for?
+ところで、メアリーから連絡はきましたか。 By the way, have you heard from Mary?
+「あなたはペンを持っていますか?」「ええ、持っています。」  "Do you have a pen?" "Yes, I have one."
+彼はドアを開けたままにした。  He left the door open.
+私は彼女が勝つと確信している。  I'm sure that she will win.
+マリアはよくテニスをする。  Maria often plays tennis.
+リンダは多くの人からとても愛されている。  Linda is much loved by many people.
+彼はとても金持ちだと言われている。  It is said that he is very rich.
+この本は2003年に書かれた。  This book was written in 2003.
+私は大学に行くことを希望します。  I hope to go to university.
+運動場では少年たちがサッカーをしていた。  There were some boys playing soccer on the field.
+もし明日雨が降れば、私は家にいるでしょう。  If it rains tomorrow, I will stay home.
+もし海の近くに住んでいれば、毎日泳ぎに行けるのに。  If I lived near the sea, I could go swimming every day.
+暇があれば、君と行けるのに。  If I were free, I could go with you.
+彼の電話番号を知っていれば、彼に電話できるのに  If I knew his cellphone number, I would call him.
+彼の電話番号を知っていればなぁ  I wish I knew his cellphone number.
+彼女はもはやここで働いていない。  She no longer works here.
+私は両親が同意しないと思います。 I don't think (that) my parents will agree.
+植物は水だけでなく太陽も必要だ。  Plants need not only water but also the sun.
+彼は英語ではなくスペイン語を話す。  He speaks not English but Spanish.
+お手伝いが必要でしたら、お声がけください。  If you need any help, please let me know.
+トムはポケットにりんごを入れていた。  Tom had an apple in his pocket.
+母はいつも忙しい。  My mother is always busy.
+図書館にいけばたいてい彼女に会えるよ。  You can usually find her in the library.
+私はその映画をまだ見ていない。  I haven't seen the movie yet.
+私はまだ彼女を愛しています。  I still love her.
+彼は今朝からずっとテレビを見続けている。  He has been watching TV since this morning.
+私は最近彼に会っていない。  I haven't seen him lately.
+今日、私にはするべきことがたくさんある。  I have a lot of things to do today.
+私はスティーブがバスを待っているのを見かけた。  I saw Steve waiting for a bus.
+私はすでにその映画を見た。  I've already seen the movie.
+`.trim();
+
+        const initialData = EXCEL_DATA.split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0)
+            .map((line, i) => {
+                const match = line.match(/^(.+?)[\s　]+(.+)$/);
+                if (match) return { id: i + 1, q: match[1].trim(), a: match[2].trim(), w: 100, ok: false, star: false };
+                return null;
+            }).filter(Boolean);
+
+        // --- メインアプリ ---
+        function App() {
+            const [items, setItems] = useState([]);
+            const [activeMode, setActiveMode] = useState('all'); 
+            const [currentItem, setCurrentItem] = useState(null);
+            const [isRevealed, setIsRevealed] = useState(false);
+            const [isFinished, setIsFinished] = useState(false);
+            const [appTitleName, setAppTitleName] = useState(document.title);
+            
+            const [settings, setSettings] = useState({ darkMode: false, autoSpeak: false, rateIndex: 0 });
+            const [modals, setModals] = useState({ menu: false, list: false });
+            const [toast, setToast] = useState({ message: '', visible: false });
+            const [listFilter, setListFilter] = useState('all');
+
+            const activeItems = useMemo(() => {
+                if (activeMode === 'star') return items.filter(i => i.star);
+                if (activeMode === 'ng') return items.filter(i => !i.ok);
+                if (activeMode === 'ok') return items.filter(i => i.ok);
+                return items;
+            }, [items, activeMode]);
+
+            useEffect(() => {
+                const savedData = localStorage.getItem(STORAGE_KEY);
+                let loadedItems = [...initialData];
+                if (savedData) {
+                    try {
+                        const pd = JSON.parse(savedData);
+                        loadedItems = loadedItems.map(item => pd[item.id] ? { ...item, ...pd[item.id] } : item);
+                    } catch(e) {}
+                }
+                setItems(loadedItems);
+
+                const s = localStorage.getItem(SETTINGS_KEY);
+                if (s) {
+                    try {
+                        const p = JSON.parse(s);
+                        setSettings(p);
+                        if (p.darkMode) document.documentElement.classList.add('dark');
+                    } catch(e) {}
+                }
+            }, []);
+
+            useEffect(() => {
+                if (items.length > 0 && !currentItem && !isFinished) {
+                   nextQuestion(items, activeMode);
+                }
+            }, [items]);
+
+            const saveItems = (newItems) => {
+                setItems(newItems);
+                const dataToSave = {};
+                newItems.forEach(i => { dataToSave[i.id] = { w: i.w, ok: i.ok, star: i.star }; });
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+            };
+
+            const nextQuestion = (currentItems, mode) => {
+                let targetGroup = currentItems;
+                if (mode === 'star') targetGroup = currentItems.filter(i => i.star);
+                else if (mode === 'ng') targetGroup = currentItems.filter(i => !i.ok);
+                else if (mode === 'ok') targetGroup = currentItems.filter(i => i.ok);
+
+                const unmastered = targetGroup.filter(i => !i.ok);
+                if (unmastered.length === 0) {
+                    setIsFinished(true);
+                    setCurrentItem(null);
+                    return;
+                }
+
+                setIsFinished(false);
+                const totalW = unmastered.reduce((s, i) => s + i.w, 0);
+                let r = Math.random() * totalW;
+                let selected = null;
+                for (let i of unmastered) {
+                    if (r < i.w) { selected = i; break; }
+                    r -= i.w;
+                }
+                setCurrentItem(selected);
+                setIsRevealed(false);
+            };
+
+            const handleReveal = useCallback(() => {
+                if (!currentItem || isRevealed) return;
+                setIsRevealed(true);
+                if (settings.autoSpeak) speak(currentItem.a, settings.rateIndex);
+            }, [currentItem, isRevealed, settings]);
+
+            const handleResult = useCallback((isOk) => {
+                if (!currentItem || !isRevealed) return;
+                const newItems = items.map(item => {
+                    if (item.id === currentItem.id) {
+                        return { ...item, w: isOk ? 1 : item.w + 200, ok: isOk };
+                    }
+                    return item;
+                });
+                saveItems(newItems);
+                nextQuestion(newItems, activeMode);
+            }, [currentItem, isRevealed, items, activeMode]);
+
+            const toggleStar = (id) => {
+                const newItems = items.map(item => item.id === id ? { ...item, star: !item.star } : item);
+                saveItems(newItems);
+                if (id === currentItem?.id) {
+                   showToast(newItems.find(i=>i.id===id).star ? "★ 要復習に追加" : "★ 要復習から外しました");
+                }
+            };
+
+            const speak = (text, rateIdx = settings.rateIndex) => {
+                if (!text || !('speechSynthesis' in window)) return;
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = 'en-US';
+                u.rate = speechRates[rateIdx];
+                window.speechSynthesis.speak(u);
+            };
+
+            const updateSetting = (key, value) => {
+                const newSettings = { ...settings, [key]: value };
+                setSettings(newSettings);
+                localStorage.setItem(SETTINGS_KEY, JSON.stringify(newSettings));
+                if (key === 'darkMode') {
+                    if (value) document.documentElement.classList.add('dark');
+                    else document.documentElement.classList.remove('dark');
+                }
+            };
+
+            const showToast = (msg) => {
+                setToast({ message: msg, visible: true });
+                setTimeout(() => setToast({ message: '', visible: false }), 2000);
+            };
+
+            const startFocusedLearning = () => {
+                setActiveMode(listFilter);
+                setModals({ ...modals, list: false });
+                nextQuestion(items, listFilter);
+                showToast("集中学習モードを開始しました");
+            };
+
+            const resetAllData = () => {
+                if (window.confirm("全学習履歴(進捗・★マーク)を削除して最初からやり直します。\nよろしいですか？")) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    setItems([...initialData]);
+                    setActiveMode('all');
+                    setModals({ ...modals, menu: false });
+                    nextQuestion(initialData, 'all');
+                    showToast("学習データをリセットしました");
+                }
+            };
+
+            // キーボードショートカット
+            useEffect(() => {
+                const handleKeyDown = (e) => {
+                    if (modals.menu || modals.list || isFinished) return;
+                    if (e.code === 'KeyS') { e.preventDefault(); if(currentItem) toggleStar(currentItem.id); return; }
+                    
+                    if (!isRevealed) {
+                        if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); handleReveal(); }
+                    } else {
+                        if (e.code === 'ArrowLeft') { e.preventDefault(); handleResult(false); }
+                        else if (e.code === 'ArrowRight') { e.preventDefault(); handleResult(true); }
+                        else if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); speak(currentItem.a); }
+                    }
+                };
+                window.addEventListener('keydown', handleKeyDown);
+                return () => window.removeEventListener('keydown', handleKeyDown);
+            }, [modals, isFinished, isRevealed, currentItem, handleReveal, handleResult]);
+
+            const okCount = activeItems.filter(i => i.ok).length;
+            const totalCount = activeItems.length;
+            const progressPercent = totalCount === 0 ? 0 : Math.floor((okCount / totalCount) * 100);
+
+            const getModeLabel = () => {
+                if (activeMode === 'star') return '★ 集中モード';
+                if (activeMode === 'ng') return '未マスター集中';
+                if (activeMode === 'ok') return '復習モード';
+                return '';
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex items-center justify-center p-4 transition-colors duration-200">
+                    
+                    <div className="bg-white dark:bg-slate-800 w-full max-w-lg p-6 sm:p-8 rounded-3xl shadow-xl transition-colors duration-200">
+                        <div className="flex justify-between items-center mb-6">
+                            <h1 className="text-xl font-bold tracking-tight">{appTitleName}</h1>
+                            <button 
+                                onClick={() => setModals({ ...modals, menu: true })}
+                                className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            >
+                                <IconSettings size={24} />
+                            </button>
+                        </div>
+
+                        <div className="mb-8">
+                            <div className="h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mb-2">
+                                <div 
+                                    className="h-full bg-blue-500 transition-all duration-300 ease-out" 
+                                    style={{ width: `${progressPercent}%` }}
+                                />
+                            </div>
+                            <div className="flex justify-between text-sm font-semibold text-slate-500 dark:text-slate-400">
+                                <span>{okCount} / {totalCount} 問 マスター</span>
+                                {activeMode !== 'all' && (
+                                    <span className="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full text-xs">
+                                        {getModeLabel()}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        {!isFinished ? (
+                            <div className="flex flex-col gap-8">
+                                <div className="relative min-h-[180px] flex flex-col items-center justify-center">
+                                    <button 
+                                        onClick={() => toggleStar(currentItem?.id)}
+                                        className={`absolute -top-2 -right-2 p-2 rounded-full transition-transform active:scale-90 ${currentItem?.star ? 'text-yellow-400' : 'text-slate-300 dark:text-slate-600 hover:text-yellow-400'}`}
+                                        title="要復習 (Sキー)"
+                                    >
+                                        <IconStar size={32} fill={currentItem?.star ? "currentColor" : "none"} />
+                                    </button>
+
+                                    <div className="text-xl sm:text-2xl font-bold leading-relaxed text-center break-words w-full px-4 mb-6">
+                                        {currentItem?.q || '---'}
+                                    </div>
+
+                                    <div className="min-h-[60px] flex items-center justify-center w-full px-2">
+                                        <div className={`text-2xl sm:text-3xl font-serif font-bold text-blue-600 dark:text-blue-400 text-center transition-all duration-200 ${!isRevealed ? 'blur-md opacity-0 select-none' : 'blur-0 opacity-100'}`}>
+                                            {currentItem?.a || '？'}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-4 mt-2">
+                                    {!isRevealed ? (
+                                        <button 
+                                            onClick={handleReveal}
+                                            className="w-full py-4 bg-blue-500 hover:bg-blue-400 text-white font-bold rounded-2xl shadow-[0_5px_0_#1d4ed8] active:translate-y-[5px] active:shadow-none transition-all flex flex-col items-center justify-center leading-tight"
+                                        >
+                                            <span className="text-lg">正解を見る</span>
+                                            <span className="text-xs font-normal opacity-80 mt-1">Space / Enter</span>
+                                        </button>
+                                    ) : (
+                                        <div className="flex gap-4">
+                                            <button 
+                                                onClick={() => handleResult(false)}
+                                                className="flex-1 py-4 bg-rose-500 hover:bg-rose-400 text-white font-bold rounded-2xl shadow-[0_5px_0_#be123c] active:translate-y-[5px] active:shadow-none transition-all flex flex-col items-center justify-center leading-tight"
+                                            >
+                                                <span className="text-lg">× もう一度</span>
+                                                <span className="text-xs font-normal opacity-80 mt-1">←</span>
+                                            </button>
+                                            <button 
+                                                onClick={() => handleResult(true)}
+                                                className="flex-1 py-4 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-2xl shadow-[0_5px_0_#047857] active:translate-y-[5px] active:shadow-none transition-all flex flex-col items-center justify-center leading-tight"
+                                            >
+                                                <span className="text-lg">○ マスター</span>
+                                                <span className="text-xs font-normal opacity-80 mt-1">→</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-10 gap-6 text-center">
+                                <IconCheckCircle size={64} className="text-emerald-500" />
+                                <div>
+                                    <h2 className="text-2xl font-bold mb-2">学習完了！</h2>
+                                    <p className="text-slate-500 dark:text-slate-400">対象の問題をすべてマスターしました。</p>
+                                </div>
+                                {activeMode !== 'all' && (
+                                    <button 
+                                        onClick={() => { setActiveMode('all'); nextQuestion(items, 'all'); }}
+                                        className="w-full py-4 mt-4 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white font-bold rounded-2xl shadow-[0_4px_0_#94a3b8] dark:shadow-[0_4px_0_#334155] active:translate-y-[4px] active:shadow-none transition-all"
+                                    >
+                                        全問題に戻る
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 設定メニュー モーダル */}
+                    {modals.menu && (
+                        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={(e) => e.target === e.currentTarget && setModals({...modals, menu: false})}>
+                            <div className="bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                <div className="flex justify-between items-center p-5 border-b border-slate-100 dark:border-slate-700">
+                                    <h3 className="text-lg font-bold">設定・機能</h3>
+                                    <button onClick={() => setModals({...modals, menu: false})} className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><IconX size={24} /></button>
+                                </div>
+                                
+                                <div className="p-3">
+                                    <button 
+                                        onClick={() => { setModals({menu: false, list: true}); setListFilter('all'); }}
+                                        className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-3 font-semibold"><IconList size={20} className="text-blue-500"/> 問題リスト・集中学習</div>
+                                        <div className="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-3 py-1 rounded-full text-sm font-bold">開く</div>
+                                    </button>
+
+                                    <div className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                        <div className="flex items-center gap-3 font-semibold">
+                                            {settings.darkMode ? <IconMoon size={20} className="text-indigo-500"/> : <IconSun size={20} className="text-orange-500"/>}
+                                            ダークモード
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" className="sr-only peer" checked={settings.darkMode} onChange={(e) => updateSetting('darkMode', e.target.checked)} />
+                                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                                        </label>
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                        <div className="flex items-center gap-3 font-semibold">
+                                            {settings.autoSpeak ? <IconVolume2 size={20} className="text-emerald-500"/> : <IconVolumeX size={20} className="text-slate-400"/>}
+                                            自動読み上げ
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" className="sr-only peer" checked={settings.autoSpeak} onChange={(e) => updateSetting('autoSpeak', e.target.checked)} />
+                                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                                        </label>
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                        <div className="flex items-center gap-3 font-semibold"><IconPlayCircle size={20} className="text-purple-500"/> 読み上げ速度</div>
+                                        <button 
+                                            onClick={() => updateSetting('rateIndex', (settings.rateIndex + 1) % speechRates.length)}
+                                            className="bg-slate-200 dark:bg-slate-700 px-3 py-1 rounded-full text-sm font-bold min-w-[3rem] text-center"
+                                        >
+                                            {speechRates[settings.rateIndex]}x
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="p-5 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700">
+                                    <button 
+                                        onClick={resetAllData}
+                                        className="w-full py-3 flex items-center justify-center gap-2 text-rose-500 font-bold rounded-xl hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                                    >
+                                        <IconRotateCcw size={18} /> 全学習履歴をリセット
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 問題リスト・集中学習 モーダル */}
+                    {modals.list && (
+                        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={(e) => e.target === e.currentTarget && setModals({...modals, list: false})}>
+                            <div className="bg-white dark:bg-slate-800 w-full max-w-2xl h-[85vh] flex flex-col rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                <div className="flex justify-between items-center p-5 border-b border-slate-100 dark:border-slate-700 shrink-0">
+                                    <h3 className="text-lg font-bold">問題リスト</h3>
+                                    <button onClick={() => setModals({...modals, list: false})} className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><IconX size={24} /></button>
+                                </div>
+
+                                <div className="flex gap-2 p-4 overflow-x-auto border-b border-slate-100 dark:border-slate-700 shrink-0 no-scrollbar">
+                                    {[
+                                        { id: 'all', label: 'すべて' },
+                                        { id: 'star', label: '★要復習' },
+                                        { id: 'ng', label: '未マスター' },
+                                        { id: 'ok', label: 'マスター済' }
+                                    ].map(f => (
+                                        <button
+                                            key={f.id}
+                                            onClick={() => setListFilter(f.id)}
+                                            className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${listFilter === f.id ? 'bg-blue-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'}`}
+                                        >
+                                            {f.label}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto p-4">
+                                    <div className="flex flex-col gap-3">
+                                        {items.filter(i => {
+                                            if (listFilter === 'star') return i.star;
+                                            if (listFilter === 'ng') return !i.ok;
+                                            if (listFilter === 'ok') return i.ok;
+                                            return true;
+                                        }).map(item => (
+                                            <div key={item.id} className="flex gap-4 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
+                                                <div className="flex flex-col gap-3 items-center shrink-0">
+                                                    {item.ok ? <IconCheckCircle size={20} className="text-emerald-500" /> : <div className="w-5 h-5 rounded-full border-2 border-slate-300 dark:border-slate-600" />}
+                                                    <button onClick={() => toggleStar(item.id)}>
+                                                        <IconStar size={20} className={item.star ? "text-yellow-400" : "text-slate-300 dark:text-slate-600"} fill={item.star ? "currentColor" : "none"} />
+                                                    </button>
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold mb-1 leading-snug">{item.q}</div>
+                                                    <div className="text-sm font-serif text-blue-600 dark:text-blue-400 font-bold">{item.a}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {items.filter(i => listFilter === 'star' && !i.star || listFilter === 'ng' && i.ok || listFilter === 'ok' && !i.ok).length === items.length && (
+                                            <div className="text-center p-10 text-slate-400 font-bold italic">該当する問題がありません</div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="p-4 border-t border-slate-100 dark:border-slate-700 shrink-0 bg-white dark:bg-slate-800">
+                                    <button 
+                                        onClick={startFocusedLearning}
+                                        disabled={items.filter(i => listFilter==='star'?i.star : listFilter==='ng'?!i.ok : listFilter==='ok'?i.ok : true).length === 0}
+                                        className="w-full py-4 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-bold rounded-2xl shadow-[0_4px_0_#1d4ed8] disabled:shadow-none active:translate-y-1 active:shadow-none transition-all"
+                                    >
+                                        表示中の条件で集中学習を開始
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* トースト通知 */}
+                    <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full font-bold shadow-lg transition-all duration-300 z-50 ${toast.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+                        {toast.message}
+                    </div>
+
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
